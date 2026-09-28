@@ -72,7 +72,7 @@
   .field{display:flex;flex-direction:column;gap:6px;}
   .field label{font-size:12px;font-weight:600;color:var(--muted);}
   .field label .opt{font-weight:400;color:var(--faint);}
-  .field input[type=text]{width:100%;padding:13px 14px;border-radius:12px;border:none;background:var(--bg);font-size:15px;font-weight:600;color:var(--text);}
+  .field input[type=text]{width:100%;padding:13px 14px;border-radius:12px;border:none;background:var(--bg);font-size:16px;font-weight:600;color:var(--text);}
   .field input[type=text]:focus{outline:2px solid var(--accent);outline-offset:0;}
   .date-btn{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;background:var(--bg);cursor:pointer;}
   .date-btn span{font-size:15px;font-weight:600;}
@@ -436,14 +436,19 @@ var ACCESS_CODE = "studio2026"; // cambia questo codice quando vuoi: basta modif
   function render() {
     app.innerHTML = "";
     var view = state.view;
-    if (view === "gate") app.appendChild(renderGate());
-    else if (view === "config-mancante") app.appendChild(renderConfigMancante());
-    else if (view === "ambiti") app.appendChild(renderAmbiti());
-    else if (view === "home") app.appendChild(renderHome());
-    else if (view === "dettaglio") app.appendChild(renderDettaglio());
-    else if (view === "ricorrenti") app.appendChild(renderRicorrenti());
+    var isOverlay = (view === "aggiungi" || view === "calendario");
+    var baseView = isOverlay ? state.returnView : view;
+
+    if (baseView === "gate") app.appendChild(renderGate());
+    else if (baseView === "config-mancante") app.appendChild(renderConfigMancante());
+    else if (baseView === "ambiti") app.appendChild(renderAmbiti());
+    else if (baseView === "home") app.appendChild(renderHome());
+    else if (baseView === "dettaglio") app.appendChild(renderDettaglio());
+    else if (baseView === "ricorrenti") app.appendChild(renderRicorrenti());
+
     if (view === "aggiungi") app.appendChild(renderAggiungiSheet());
     if (view === "calendario") app.appendChild(renderCalendarioSheet());
+    document.body.style.overflow = isOverlay ? "hidden" : "";
     attachEvents();
   }
 
