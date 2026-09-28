@@ -196,6 +196,12 @@ var ACCESS_CODE = "studio2026"; // cambia questo codice quando vuoi: basta modif
   // ---------- avvio ----------
 
   function init() {
+    if (SUPABASE_URL.indexOf("INSERISCI_QUI") === 0 || SUPABASE_ANON_KEY.indexOf("INSERISCI_QUI") === 0) {
+      state.view = "config-mancante";
+      render();
+      return;
+    }
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     try {
       if (localStorage.getItem(GATE_KEY) === "1") {
         avviaApp();
@@ -205,8 +211,14 @@ var ACCESS_CODE = "studio2026"; // cambia questo codice quando vuoi: basta modif
     render();
   }
 
-  function sbloccaConCodice(codice) {
-    if (codice === ACCESS_CODE) {
+  async function sbloccaConCodice(codice) {
+    var codiceAtteso = ACCESS_CODE;
+    try {
+      var res = await sb.from("config").select("valore").eq("chiave", "access_code").maybeSingle();
+      if (res.data && res.data.valore) codiceAtteso = res.data.valore;
+    } catch (e) { /* se la tabella non esiste ancora, usa il codice di riserva nel file */ }
+
+    if (codice === codiceAtteso) {
       try { localStorage.setItem(GATE_KEY, "1"); } catch (e) {}
       avviaApp();
     } else {
@@ -216,12 +228,6 @@ var ACCESS_CODE = "studio2026"; // cambia questo codice quando vuoi: basta modif
   }
 
   function avviaApp() {
-    if (SUPABASE_URL.indexOf("INSERISCI_QUI") === 0 || SUPABASE_ANON_KEY.indexOf("INSERISCI_QUI") === 0) {
-      state.view = "config-mancante";
-      render();
-      return;
-    }
-    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     caricaMeta();
     subscribeRicorrenti();
     state.view = "ambiti";
