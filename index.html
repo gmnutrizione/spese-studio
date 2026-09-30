@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Contabilità</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#F4F6F5; --card:#FFFFFF; --accent:#0F766E; --accent-dark:#0B5C56;
@@ -137,7 +140,8 @@
   .totale-input{width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:1.5px solid var(--accent);background:#fff;font-size:20px;font-weight:800;color:var(--accent);text-align:left;}
   .totale-input:focus{outline:none;}
   .hint-sm{font-size:11px;color:var(--faint);margin:6px 2px 0 2px;}
-  .doc-card{margin:16px 20px 0 20px;padding:26px 22px;font-family:Georgia,"Times New Roman",serif;color:#1A1A1A;}
+  .doc-card{margin:16px 20px 0 20px;padding:26px 22px;font-family:"Open Sans","Segoe UI",-apple-system,sans-serif;color:#1A1A1A;}
+  .doc-parties .body b{font-weight:700;}
   .doc-head{display:flex;align-items:flex-start;justify-content:space-between;}
   .doc-head .doc-title{font-size:20px;font-weight:700;}
   .doc-head .doc-meta{text-align:right;font-size:12.5px;line-height:1.6;}
@@ -191,10 +195,12 @@ var ACCESS_CODE = "studio2026"; // cambia questo codice quando vuoi: basta modif
   var DEFAULT_CAT_RICAVO = ["Affitto stanza"];
   var PRESTAZIONI_DEFAULT = [
     "Valutazione stato nutrizionale ed elaborazione dieta ottimale",
-    "Controllo nutrizionale",
-    "Percorso nutrizionale completo",
-    "Consulenza nutrizionale sportiva",
-    "Visita di follow-up"
+    "Visita di controllo (n°1)",
+    "Visite di controllo (n°2)",
+    "Visite di controllo (n°3)",
+    "Visite di controllo (n°4)",
+    "Percorso nutrizionale",
+    "Consulenza nutrizionale"
   ];
   var AMBITO = "studio";
   var GATE_KEY = "spese_studio_sbloccato";
@@ -629,34 +635,36 @@ var ACCESS_CODE = "studio2026"; // cambia questo codice quando vuoi: basta modif
   }
 
   function generaPdfFattura(f) {
-    if (!window.jspdf) { alert("Libreria PDF non disponibile, ricarica la pagina."); return; }
+    if (!window.jspdf) { alert("Libreria PDF non disponibile: controlla la connessione e ricarica la pagina."); return; }
+    try {
     var doc = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
     var pageW = 210, m = 20, y = 25;
-    doc.setFont("times", "bold"); doc.setFontSize(16);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(16);
     doc.text("Fattura", m, y);
-    doc.setFont("times", "normal"); doc.setFontSize(10);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
     doc.text("N°: " + f.numero, pageW - m, y - 4, { align: "right" });
     doc.text("Data: " + formatDateBreve(f.data), pageW - m, y + 1, { align: "right" });
 
     y += 14;
-    doc.setFont("times", "bold"); doc.setFontSize(9);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9);
     doc.text("Da", m, y);
     doc.text("A", pageW / 2 + 4, y);
-    doc.setFont("times", "normal"); doc.setFontSize(9.5);
+    doc.setFontSize(9.5);
     var da = ["Giovanni Murdaca", "Via Repubblica n°13, 13894, Gaglianico, BI", "C.F. MRDGNN95M28A859J", "N° Partita IVA 02753720024"];
     var a = [f.cliente_nome || "", f.cliente_indirizzo || "", [f.cliente_cap, f.cliente_comune].filter(Boolean).join(", "), f.cliente_cf || f.cliente_piva || ""];
-    da.forEach(function (line, i) { doc.text(line, m, y + 6 + i * 5); });
-    a.forEach(function (line, i) { doc.text(line, pageW / 2 + 4, y + 6 + i * 5); });
+    da.forEach(function (line, i) { doc.setFont("helvetica", i === 0 ? "bold" : "normal"); doc.text(line, m, y + 6 + i * 5); });
+    a.forEach(function (line, i) { doc.setFont("helvetica", i === 0 ? "bold" : "normal"); doc.text(line, pageW / 2 + 4, y + 6 + i * 5); });
+    doc.setFont("helvetica", "normal");
 
     y += 32;
     doc.setDrawColor(20); doc.setLineWidth(0.3);
     doc.line(m, y, pageW - m, y);
     y += 5;
-    doc.setFont("times", "bold"); doc.setFontSize(9);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9);
     doc.text("Prestazione", m, y);
     doc.text("Importo", pageW - m, y, { align: "right" });
     y += 5;
-    doc.setFont("times", "normal");
+    doc.setFont("helvetica", "normal");
     (f.prestazioni || []).forEach(function (p) {
       doc.text(p.descrizione, m, y, { maxWidth: 120 });
       doc.text(formatEUR(p.importo), pageW - m, y, { align: "right" });
@@ -670,22 +678,32 @@ var ACCESS_CODE = "studio2026"; // cambia questo codice quando vuoi: basta modif
 
     doc.text("Imponibile", m, y); doc.text(formatEUR(f.imponibile), pageW - m, y, { align: "right" }); y += 6;
     if (f.bollo > 0) { doc.text("Marca da bollo", m, y); doc.text(formatEUR(f.bollo), pageW - m, y, { align: "right" }); y += 6; }
-    doc.setFont("times", "bold"); doc.setFontSize(10.5);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10.5);
     doc.line(m, y - 2, pageW - m, y - 2);
     doc.text("Totale", m, y + 3); doc.text(formatEUR(f.totale), pageW - m, y + 3, { align: "right" });
 
     y += 16;
-    doc.setFont("times", "normal"); doc.setFontSize(8);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+    var maxW = pageW - 2 * m;
+    var lineH = 3.6;
     var note1 = "Operazione senza applicazione dell'IVA, effettuata ai sensi dell'articolo 1, commi da 54 a 89, l. n. 190 del 2014 così come modificato dalla l. n. 208 del 2015 e dalla l. n. 145 del 2018.";
     var note2 = "Si richiede la non applicazione della ritenuta alla fonte a titolo d'acconto ai sensi dell'articolo 1 comma 67 della Legge numero 190/2014 e successive modificazioni.";
-    y = doc.text(note1, m, y, { maxWidth: pageW - 2 * m }).y + 4;
-    y = doc.text(note2, m, y, { maxWidth: pageW - 2 * m }).y + 4;
+    var lines1 = doc.splitTextToSize(note1, maxW);
+    doc.text(lines1, m, y);
+    y += lines1.length * lineH + 4;
+    var lines2 = doc.splitTextToSize(note2, maxW);
+    doc.text(lines2, m, y);
+    y += lines2.length * lineH + 4;
     if (f.bollo > 0) {
       var note3 = "Marca da bollo da 2 euro" + (f.bollo_id ? " (ID " + f.bollo_id + ")" : "") + " assolta sull'originale per importi maggiori di 77,47 euro.";
-      doc.text(note3, m, y, { maxWidth: pageW - 2 * m });
+      var lines3 = doc.splitTextToSize(note3, maxW);
+      doc.text(lines3, m, y);
     }
 
     doc.save("fattura-" + String(f.numero).replace(/[\\/]/g, "-") + ".pdf");
+    } catch (err) {
+      alert("Non sono riuscito a generare il PDF: " + (err && err.message ? err.message : err));
+    }
   }
 
   function formatDateBreve(iso) {
@@ -1222,8 +1240,8 @@ var ACCESS_CODE = "studio2026"; // cambia questo codice quando vuoi: basta modif
     ));
     doc.appendChild(h(
       '<div class="doc-parties">' +
-        '<div><div class="lab">Da</div><div class="body">Giovanni Murdaca<br>Via Repubblica n°13, 13894, Gaglianico, BI<br>C.F. MRDGNN95M28A859J<br>N° Partita IVA 02753720024</div></div>' +
-        '<div><div class="lab">A</div><div class="body">' + esc(fatt.cliente_nome) + '<br>' + esc(fatt.cliente_indirizzo || "") + '<br>' + esc([fatt.cliente_cap, fatt.cliente_comune].filter(Boolean).join(", ")) + '<br>' + esc(fatt.cliente_cf || fatt.cliente_piva || "") + '</div></div>' +
+        '<div><div class="lab">Da</div><div class="body"><b>Giovanni Murdaca</b><br>Via Repubblica n°13, 13894, Gaglianico, BI<br>C.F. MRDGNN95M28A859J<br>N° Partita IVA 02753720024</div></div>' +
+        '<div><div class="lab">A</div><div class="body"><b>' + esc(fatt.cliente_nome) + '</b><br>' + esc(fatt.cliente_indirizzo || "") + '<br>' + esc([fatt.cliente_cap, fatt.cliente_comune].filter(Boolean).join(", ")) + '<br>' + esc(fatt.cliente_cf || fatt.cliente_piva || "") + '</div></div>' +
       '</div>'
     ));
     doc.appendChild(h('<div class="doc-table-head"><span>Prestazione</span><span>Importo</span></div>'));
