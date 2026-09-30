@@ -638,72 +638,118 @@ var ACCESS_CODE = "studio2026"; // cambia questo codice quando vuoi: basta modif
     if (!window.jspdf) { alert("Libreria PDF non disponibile: controlla la connessione e ricarica la pagina."); return; }
     try {
     var doc = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
-    var pageW = 210, m = 20, y = 25;
-    doc.setFont("helvetica", "bold"); doc.setFontSize(16);
-    doc.text("Fattura", m, y);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-    doc.text("N°: " + f.numero, pageW - m, y - 4, { align: "right" });
-    doc.text("Data: " + formatDateBreve(f.data), pageW - m, y + 1, { align: "right" });
+    var pageW = 210, m = 28, y = 34;
+    var DARK = [26, 26, 26], GRAY_TEXT = [85, 85, 85], GRAY_LIGHT = [217, 217, 217];
 
+    function rule(yy) { doc.setDrawColor(GRAY_LIGHT[0], GRAY_LIGHT[1], GRAY_LIGHT[2]); doc.setLineWidth(0.4); doc.line(m, yy, pageW - m, yy); }
+
+    // intestazione minimale
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    doc.setTextColor(GRAY_TEXT[0], GRAY_TEXT[1], GRAY_TEXT[2]);
+    doc.text(("FATTURA N° " + f.numero).toUpperCase(), m, y);
+    doc.text(formatDateLong(f.data).toUpperCase(), pageW - m, y, { align: "right" });
     y += 14;
-    doc.setFont("helvetica", "bold"); doc.setFontSize(9);
-    doc.text("Da", m, y);
-    doc.text("A", pageW / 2 + 4, y);
-    doc.setFontSize(9.5);
-    var da = ["Giovanni Murdaca", "Via Repubblica n°13, 13894, Gaglianico, BI", "C.F. MRDGNN95M28A859J", "N° Partita IVA 02753720024"];
-    var a = [f.cliente_nome || "", f.cliente_indirizzo || "", [f.cliente_cap, f.cliente_comune].filter(Boolean).join(", "), f.cliente_cf || f.cliente_piva || ""];
-    da.forEach(function (line, i) { doc.setFont("helvetica", i === 0 ? "bold" : "normal"); doc.text(line, m, y + 6 + i * 5); });
-    a.forEach(function (line, i) { doc.setFont("helvetica", i === 0 ? "bold" : "normal"); doc.text(line, pageW / 2 + 4, y + 6 + i * 5); });
-    doc.setFont("helvetica", "normal");
+    rule(y);
 
-    y += 32;
-    doc.setDrawColor(20); doc.setLineWidth(0.3);
-    doc.line(m, y, pageW - m, y);
-    y += 5;
-    doc.setFont("helvetica", "bold"); doc.setFontSize(9);
-    doc.text("Prestazione", m, y);
-    doc.text("Importo", pageW - m, y, { align: "right" });
-    y += 5;
-    doc.setFont("helvetica", "normal");
+    // Da / A
+    y += 16;
+    doc.setFontSize(7.5);
+    doc.setTextColor(GRAY_TEXT[0], GRAY_TEXT[1], GRAY_TEXT[2]);
+    doc.text("DA", m, y);
+    doc.text("A", pageW / 2 + 8, y);
+    y += 8;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+    doc.setTextColor(DARK[0], DARK[1], DARK[2]);
+    var daNome = "Giovanni Murdaca";
+    var aNome = f.cliente_nome || "";
+    doc.text(daNome, m, y);
+    doc.text(aNome, pageW / 2 + 8, y);
+    y += 7;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    doc.setTextColor(GRAY_TEXT[0], GRAY_TEXT[1], GRAY_TEXT[2]);
+    var da = ["Via Repubblica n°13, 13894, Gaglianico, BI", "C.F. MRDGNN95M28A859J", "N° Partita IVA 02753720024"];
+    var a = [f.cliente_indirizzo || "", [f.cliente_cap, f.cliente_comune].filter(Boolean).join(", "), f.cliente_cf || f.cliente_piva || ""];
+    da.forEach(function (line, i) { doc.text(line, m, y + i * 5.6); });
+    a.forEach(function (line, i) { doc.text(line, pageW / 2 + 8, y + i * 5.6); });
+
+    y += 3 * 5.6 + 18;
+    rule(y);
+
+    // prestazioni
+    y += 12;
+    doc.setFontSize(7.5);
+    doc.setTextColor(GRAY_TEXT[0], GRAY_TEXT[1], GRAY_TEXT[2]);
+    doc.text("PRESTAZIONE", m, y);
+    doc.text("IMPORTO", pageW - m, y, { align: "right" });
+    y += 11;
+    doc.setFontSize(10.5);
+    doc.setTextColor(DARK[0], DARK[1], DARK[2]);
     (f.prestazioni || []).forEach(function (p) {
       doc.text(p.descrizione, m, y, { maxWidth: 120 });
       doc.text(formatEUR(p.importo), pageW - m, y, { align: "right" });
-      y += 6;
+      y += 10.5;
     });
+    doc.setFontSize(9.5);
+    doc.setTextColor(GRAY_TEXT[0], GRAY_TEXT[1], GRAY_TEXT[2]);
     doc.text("Contributo integrativo Enpab 4%", m, y);
     doc.text(formatEUR(f.enpab), pageW - m, y, { align: "right" });
-    y += 3;
-    doc.line(m, y, pageW - m, y);
-    y += 7;
 
-    doc.text("Imponibile", m, y); doc.text(formatEUR(f.imponibile), pageW - m, y, { align: "right" }); y += 6;
-    if (f.bollo > 0) { doc.text("Marca da bollo", m, y); doc.text(formatEUR(f.bollo), pageW - m, y, { align: "right" }); y += 6; }
-    doc.setFont("helvetica", "bold"); doc.setFontSize(10.5);
-    doc.line(m, y - 2, pageW - m, y - 2);
-    doc.text("Totale", m, y + 3); doc.text(formatEUR(f.totale), pageW - m, y + 3, { align: "right" });
+    y += 12;
+    rule(y);
+    y += 11;
 
-    y += 16;
-    doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+    doc.setFontSize(10);
+    doc.setTextColor(GRAY_TEXT[0], GRAY_TEXT[1], GRAY_TEXT[2]);
+    doc.text("Imponibile", m, y);
+    doc.text(formatEUR(f.imponibile), pageW - m, y, { align: "right" });
+    if (f.bollo > 0) {
+      y += 8;
+      doc.text("Marca da bollo", m, y);
+      doc.text(formatEUR(f.bollo), pageW - m, y, { align: "right" });
+    }
+
+    y += 12;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(16);
+    doc.setTextColor(DARK[0], DARK[1], DARK[2]);
+    doc.text("Totale", m, y);
+    doc.setFont("helvetica", "bold");
+    doc.text(formatEUR(f.totale), pageW - m, y, { align: "right" });
+
+    y += 26;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7.5);
+    doc.setTextColor(GRAY_TEXT[0], GRAY_TEXT[1], GRAY_TEXT[2]);
     var maxW = pageW - 2 * m;
-    var lineH = 3.6;
+    var lineH = 4.4;
     var note1 = "Operazione senza applicazione dell'IVA, effettuata ai sensi dell'articolo 1, commi da 54 a 89, l. n. 190 del 2014 così come modificato dalla l. n. 208 del 2015 e dalla l. n. 145 del 2018.";
     var note2 = "Si richiede la non applicazione della ritenuta alla fonte a titolo d'acconto ai sensi dell'articolo 1 comma 67 della Legge numero 190/2014 e successive modificazioni.";
     var lines1 = doc.splitTextToSize(note1, maxW);
     doc.text(lines1, m, y);
-    y += lines1.length * lineH + 4;
+    y += lines1.length * lineH + 3.5;
     var lines2 = doc.splitTextToSize(note2, maxW);
     doc.text(lines2, m, y);
-    y += lines2.length * lineH + 4;
+    y += lines2.length * lineH + 3.5;
     if (f.bollo > 0) {
       var note3 = "Marca da bollo da 2 euro" + (f.bollo_id ? " (ID " + f.bollo_id + ")" : "") + " assolta sull'originale per importi maggiori di 77,47 euro.";
       var lines3 = doc.splitTextToSize(note3, maxW);
       doc.text(lines3, m, y);
     }
 
-    doc.save("fattura-" + String(f.numero).replace(/[\\/]/g, "-") + ".pdf");
+    doc.save(nomeFilePdf(f) + ".pdf");
     } catch (err) {
       alert("Non sono riuscito a generare il PDF: " + (err && err.message ? err.message : err));
     }
+  }
+
+  function nomeFilePdf(f) {
+    function pulisci(s) {
+      return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9]+/g, "");
+    }
+    var parti = String(f.numero || "").split("/");
+    var numero = pulisci(parti[0]) || "0";
+    var anno = parti[1] ? pulisci(parti[1]) : String((f.data || "").slice(0, 4));
+    var paroleNome = String(f.cliente_nome || "").trim().split(/\s+/).filter(Boolean);
+    var cognome = pulisci(paroleNome.length ? paroleNome[paroleNome.length - 1] : "cliente") || "cliente";
+    return numero + "_" + cognome + "_" + anno;
   }
 
   function formatDateBreve(iso) {
@@ -912,7 +958,12 @@ var ACCESS_CODE = "studio2026"; // cambia questo codice quando vuoi: basta modif
 
   function renderHome() {
     var wrap = h('<div></div>');
-    wrap.appendChild(h('<div class="topbar"><h1>Studio</h1><div style="width:40px"></div></div>'));
+    wrap.appendChild(h(
+      '<div class="topbar">' +
+        '<button class="iconbtn" data-action="torna-ambiti" aria-label="Indietro"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>' +
+        '<h1>Spese studio</h1><div style="width:40px"></div>' +
+      '</div>'
+    ));
     wrap.appendChild(h(
       '<div class="month-nav">' +
         '<button class="iconbtn" data-action="mese-prec" aria-label="Mese precedente"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>' +
